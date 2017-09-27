@@ -1,6 +1,6 @@
-const request = require('request');
 const yargs = require('yargs');
-
+const geocode = require('./geocode/geocode.js');
+const weather = require('./weather/weather.js');
 const argv = yargs
 .options({
   a: {
@@ -14,15 +14,22 @@ const argv = yargs
 .alias('help','h')
 .argv;
 
-console.log(argv);
-
-var url = 'https://maps.googleapis.com/maps/api/geocode/json?address='+encodeURIComponent(argv.address);
-
-request({
-  url:url,
-  json:true
-},(error,response,body) => {
-  //console.log(JSON.stringify(response,undefined,2));
-  console.log(`Location: ${body.results[0].geometry.location.lat} ${body.results[0].geometry.location.lng}`);
-  console.log(`Formatted address: ${body.results[0].formatted_address}`)
+geocode.geocodeAddress(argv.address,(results,errormessages) => {
+  if(errormessages !== undefined) {
+    console.log(errormessages);
+  } else {
+    console.log(JSON.stringify(results,undefined,2));
+    if(results !== undefined) {
+      weather.getTemperature({
+        lat:results.lat,
+        lng:results.lng
+      },(result,errormessages) => {
+        if(errormessages !== undefined) {
+          console.log(errormessages);
+        } else {
+          console.log('Apparent temperature in the area is '+JSON.stringify(result,undefined,2));
+        }
+      });
+    }
+  }
 });
